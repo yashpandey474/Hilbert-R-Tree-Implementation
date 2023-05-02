@@ -10,7 +10,7 @@
 #define m 2
 #define MAX_CHILDREN M // M = 4; MAXIMUM NUMBER OF CHILDREN/ENTRIES
 #define MIN_CHILDREN m // m = 2; MINIMUM NUMBER OF CHILDREN/ENTRIES
-#define MAX_POINTS 21  // SPECIFY NUMBER OF POINTS TO TAKE AS INPUT
+#define MAX_POINTS 50000 // SPECIFY NUMBER OF POINTS TO TAKE AS INPUT
 #define MAX_NO_SIBLINGS 4
 
 //--------------------------- STRUCTURE DEFINITIONS ----------------------------//
@@ -80,7 +80,7 @@ NODE root1 = NULL;
 NODE root2 = NULL;
 Point points[MAX_POINTS];
 Rectangle rectangles[MAX_POINTS];
-int hilbert_curve_order = 5;
+int hilbert_curve_order = 20; //DEFAULT; GETS CALCULATED AT RUN-TIME
 int max_entries = 0;
 
 // ---------------------------- FUNCTION DECLERATIONS ------------------------------ //
@@ -405,8 +405,6 @@ void AdjustTree(NODE N, NODE NN, NODE *S, int s_size)
     // STOP IF ROOT LEVEL REACHED
     NODE Np = N->parent_ptr;
     NODE new_node = NULL;
-
-    // printf("ADJUST TREE CALLED\n");
 
     // PARENT = NULL; ROOT LEVEL
     // A1. IF ROOT LEVEL IS REACHED; STOP
@@ -996,7 +994,7 @@ void adjustMBRLHV(NODE parentNode)
     // FOR NON-NULL NODES; FOR EACH ENTRY [NON-LEAF SINCE PARENTNODES ARE ALWAYS NON-LEAF]
     for (int i = 0; i < parentNode->non_leaf_node.num_entries; i++)
     {
-        // CALCULATE THE MINIMUM BOUNDING RECTANGLE FOR EACH ENTRY
+        // CALCULATE THE MINIMUM BOUNDING RECTANGLE FOR EACH ENTRY AND THE LHV 
         parentNode->non_leaf_node.entries[i].mbr = calculateEntryMBR(parentNode->non_leaf_node.entries[i]);
         parentNode->non_leaf_node.entries[i].largest_hilbert_value = calculateLHV(parentNode->non_leaf_node.entries[i]);
     }
@@ -1056,9 +1054,6 @@ NODE *cooperatingSiblings(NODE n)
     {
         S[++numSiblingsCP] = parentNode->non_leaf_node.entries[index + 1].child_ptr;
     }
-
-    // SORT S ON COMPUTELHV(ELEMENT): LHV OF THE NON LEAF ENTRIES
-    // sortSiblings(S, numSiblingsCP + 1);
 
     return S;
 }
@@ -1273,9 +1268,8 @@ void insertRectangles(HilbertRTree *Rtree)
     {
         rectangles[i] = new_rectangle(points[i].x, points[i].y, points[i].x, points[i].y);
         Rtree->root = Insert(Rtree->root, rectangles[i]);
-        // printf("ENTRIES INSERTED: %d\n", i+1);
+        printf("ENTRIES INSERTED: %d %%\n", (i + 1) * 100 / MAX_POINTS);
     }
-
 }
 
 // NOT USED FOR LARGE DATASETS
@@ -1386,38 +1380,6 @@ void insertRectanglesSorted(HilbertRTree* Rtree){
     }
 }
 
-void readFile2(char *filename, HilbertRTree* Rtree)
-{
-    FILE *fp;
-
-    // OPENING FILE CONTAINING THE INPUT DATA POINTS
-    fp = fopen(filename, "r");
-
-    // SET MAXMIMUM COORDINATE VALUE TO 0
-    int max_val = 0;
-
-    // IF FILE COULD NOT BE OPENED
-    if (fp == NULL)
-    {
-        printf("Error opening file.\n");
-        return;
-    }
-
-    // INPUT DATA POINTS FROM THE FILE: NUMBER OF POINTS SPECIFIED BY MACRO MAX_POINTS
-    for (int i = 0; i < MAX_POINTS; i++)
-    {
-        // INPUT POINT
-        fscanf(fp, "%d %d\n", &points[i].x, &points[i].y);
-        rectangles[i] = new_rectangle(points[i].x, points[i].y, points[i].x, points[i].y);
-        Rtree->root = Insert(Rtree->root, rectangles[i]);
-    }
-
-    // CLOSING THE FILE AFTER READING INPUT
-    fclose(fp);
-
-    // PRINT THE MAXIMUM COORDINATE AND ORDER
-    printf("MAX VALUE = %d, ORDER= %d\n", max_val, hilbert_curve_order);
-}
 
 int main()
 {
@@ -1425,14 +1387,11 @@ int main()
     HilbertRTree *Rtree = new_hilbertRTree();
 
     // READ THE POINTS INTO POINTS ARRAY FROM FILE & FIND HILBERT CURVE'S ORDER
-    // readFile("data.txt"); // SPECIFY FILE NAME HERE
+    readFile("data1.txt"); // SPECIFY FILE NAME HERE
 
-
-    hilbert_curve_order = calculateOrder();
-    readFile2("data.txt", Rtree);
 
     // CREATE & INSERT THE POINT RECTANGLES INTO THE RTREE
-    // insertRectangles(Rtree);
+    insertRectangles(Rtree);
 
     //ALTERNATE: INSERT AFTER SORTING ON HILBERT VALUE
     // insertRectanglesSorted(Rtree);
