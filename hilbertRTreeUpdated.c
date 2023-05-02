@@ -3,23 +3,22 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdbool.h>
-// EVERY NODE HAS BETWEEN m and M entries and children unless it is root
 
 //--------------------------- MACRO DEFINITIONS ----------------------------//
-
+// EVERY NODE HAS BETWEEN m and M entries and children unless it is root 
 #define M 4
 #define m 2
 #define MAX_CHILDREN M // M = 4; MAXIMUM NUMBER OF CHILDREN/ENTRIES
 #define MIN_CHILDREN m // m = 2; MINIMUM NUMBER OF CHILDREN/ENTRIES
-#define MAX_POINTS 21 //SPECIFY NUMBER OF POINTS TO TAKE AS INPUT
-#define MAX_NO_SIBLINGS 4 
+#define MAX_POINTS 21  // SPECIFY NUMBER OF POINTS TO TAKE AS INPUT
+#define MAX_NO_SIBLINGS 4
 
 //--------------------------- STRUCTURE DEFINITIONS ----------------------------//
 
 typedef struct Point Point;
 struct Point
 {
-    int x, y; //COORDINATES OF 2D POINT
+    int x, y; // COORDINATES OF 2D POINT
 };
 
 typedef struct Rectangle Rectangle;
@@ -39,8 +38,8 @@ struct LeafEntry
 typedef struct LeafNode LeafNode;
 struct LeafNode
 {
-    int num_entries; //NUMBER OF LEAF ENTRIES IN NODE
-    struct LeafEntry entries[MAX_CHILDREN]; //ARRAY OF LEAF ENTRIES
+    int num_entries;                        // NUMBER OF LEAF ENTRIES IN NODE
+    struct LeafEntry entries[MAX_CHILDREN]; // ARRAY OF LEAF ENTRIES
 };
 
 typedef struct NonLeafEntry NonLeafEntry;
@@ -54,8 +53,8 @@ struct NonLeafEntry
 typedef struct NonLeafNode NonLeafNode;
 struct NonLeafNode
 {
-    int num_entries; //NUMBER OF NON LEAF ENTRIES IN NODE
-    struct NonLeafEntry entries[MAX_CHILDREN]; //ARRAY OF NON LEAF ENTRIES
+    int num_entries;                           // NUMBER OF NON LEAF ENTRIES IN NODE
+    struct NonLeafEntry entries[MAX_CHILDREN]; // ARRAY OF NON LEAF ENTRIES
 };
 typedef struct Node *NODE;
 struct Node
@@ -74,7 +73,7 @@ struct HilbertRTree
 
 //--------------------------- GLOBAL VARIABLE DECLARATIONS ----------------------------//
 
-int CURRENT_ID = 0; 
+int CURRENT_ID = 0;
 int num_results = 0;
 bool root_split = false;
 NODE root1 = NULL;
@@ -89,26 +88,23 @@ int max_entries = 0;
 HilbertRTree *new_hilbertRTree();
 NODE new_node(int is_leaf);
 void InsertNode(NODE parent, NODE newNode);
-
+void preOrderTraverse_Rtree(HilbertRTree *tree);
 NODE Insert(NODE root, Rectangle rectangle);
 NODE ChooseLeaf(NODE n, Rectangle r, int h);
 void AdjustTree(NODE N, NODE NN, NODE *S, int s_size);
 NODE HandleOverFlow(NODE n, Rectangle rectangle);
 void preOrderTraverse(NODE n);
-
-uint64_t xy2d(uint64_t n, uint64_t x, uint64_t y);
-uint64_t interleave(uint64_t x);
-uint64_t hilbertXYToIndex(uint64_t n, uint64_t x, uint64_t y);
-void rotate(uint64_t n, uint64_t *x, uint64_t *y, uint64_t rx, uint64_t ry);
+void createRectangles();
+int calculateOrder();
+void readFile(char *filename);
+void custom_rotate(uint64_t n, uint64_t *x_coord, uint64_t *y_coord, uint64_t quadrant_x, uint64_t quadrant_y);
+uint64_t calculate_hilbert_value(uint64_t n, uint64_t x_coord, uint64_t y_coord);
 void store_all_nonleaf_entries(NonLeafEntry *E, NODE *S, int *num_entries, int numSiblings);
 void printMBR(Rectangle rect);
 void store_all_leaf_entries(LeafEntry *E, int *num_entries, NODE *S, int numSiblings);
-void store_all_nonleaf_entries(NonLeafEntry *E, NODE *S, int *num_entries, int numSiblings);
 void distribute_nonleaf_entries_evenly(NODE *S, int numSiblings, NonLeafEntry *E, int *num_entries);
 void adjustLHV(NODE parentNode);
 void adjustMBR(NODE parentNode);
-void sortSiblings(NODE *S, int numSiblings);
-void copy_rectangle(Rectangle r1, Rectangle r2);
 void distribute_leaf_entries_evenly(NODE *S, int numSiblings, LeafEntry *E, int *num_entries);
 void searchGetResults(NODE root, Rectangle rectangle, LeafEntry *results);
 void print_mbr(Rectangle r);
@@ -118,7 +114,6 @@ Rectangle calculateEntryMBR(NonLeafEntry entry);
 bool allNodesFull(NODE *S, int numSiblings);
 bool rectangles_equal(Rectangle *rect1, Rectangle *rect2);
 bool nodes_equal(NODE node1, NODE node2);
-bool isInArray(NODE *arr, int size, NODE node);
 bool intersects(Rectangle r1, Rectangle r2);
 LeafEntry new_leafentry(Rectangle rectangle);
 LeafEntry new_leafentry(Rectangle rectangle);
@@ -137,7 +132,7 @@ NODE HandleOverFlowNode(NODE parentNode, NODE new_node1);
 // CREATE A NEW HILBERT R TREE STRUCTURE
 HilbertRTree *new_hilbertRTree()
 {
-    HilbertRTree *tree = (HilbertRTree *) calloc(1, sizeof(HilbertRTree));
+    HilbertRTree *tree = (HilbertRTree *)calloc(1, sizeof(HilbertRTree));
 
     // INITIALLY THE ROOT OF TREE IS A LEAF;
     tree->root = new_node(1);
@@ -165,7 +160,7 @@ int computeLeafLHV(NODE a)
 {
     // SET LHV TO NULL INITIALLY
     int LHV = 0;
-    
+
     // IF CHILD POINTER NODE IS NULL
     if (a == NULL)
     {
@@ -184,7 +179,6 @@ int computeLeafLHV(NODE a)
     // RETURN LHV
     return LHV;
 }
-
 
 // HELPER FUNCTION TO INSERT THE NEWNODE AS THE CHILD NODE OF A NONLEAF ENTRY INTO NODE PARENT
 void InsertNode(NODE parent, NODE newNode)
@@ -244,13 +238,14 @@ uint64_t calculate_hilbert_value(uint64_t n, uint64_t x_coord, uint64_t y_coord)
     // While loop conversion
     while (bit > 0)
     {
-        quadrant_x = (x_coord & bit) > 0;
         quadrant_y = (y_coord & bit) > 0;
-        hilbert_dist += bit * bit * ((3 * quadrant_x) ^ quadrant_y);
+        quadrant_x = (x_coord & bit) > 0;
+
+        hilbert_dist = hilbert_dist + bit * bit * ((3 * quadrant_x) ^ quadrant_y);
         custom_rotate(bit, &x_coord, &y_coord, quadrant_x, quadrant_y);
 
         // Update bit
-        bit >>= 1;
+        bit = bit / 2;
     }
     return hilbert_dist;
 }
@@ -459,11 +454,10 @@ void AdjustTree(NODE N, NODE NN, NODE *S, int s_size)
 
     // FOR EVERY SIBLING NODE; PARENT NODE IS SAME
     P[0] = S[0]->parent_ptr;
-    
+
     // A3. ADJUST CORRESPONDINNG MBRs AND LHVs OF NODES IN P
     adjustMBR(P[0]);
     adjustLHV(P[0]);
-
 
     // A4. MOVE UP TO NEXT LEVEL: NN = NEW_NODE, S = P, NUMSIBLINGS = NUMPARENTS
     AdjustTree(Np, new_node, P, numParents);
@@ -487,9 +481,9 @@ NODE HandleOverFlow(NODE n, Rectangle rectangle)
 
     // H1: SET OF ALL ENTRIES FROM SIBLINGS
     // E = SET OF ALL ENTRIES FROM N AND S-1 COOPERATING SIBLINGS
-    LeafEntry *E = (LeafEntry *)calloc(max_entries+1, sizeof(LeafEntry));
+    LeafEntry *E = (LeafEntry *)calloc(max_entries + 1, sizeof(LeafEntry));
     int *num_entries = (int *)malloc(sizeof(int));
-    *num_entries = 0; 
+    *num_entries = 0;
 
     // STORE ALL LEAF ENTRIES
     store_all_leaf_entries(E, num_entries, S, numSiblings);
@@ -503,8 +497,6 @@ NODE HandleOverFlow(NODE n, Rectangle rectangle)
     // SORT THE ENTRIES IN E
     qsort(E, *(num_entries), sizeof(LeafEntry), compare);
 
-
-
     // H4. IF ATLEAST ONE OF SIBLINGS IS NOT FULL
     if (allFull)
     {
@@ -516,6 +508,8 @@ NODE HandleOverFlow(NODE n, Rectangle rectangle)
         {
             // ROOT NODE IS SPLIT
             root_split = true;
+            root1 = n;
+            root2 = NN;
         }
 
         // ADD NN TO SIBLINGS
@@ -548,7 +542,7 @@ void preOrderTraverse(NODE n)
 
         for (int i = 0; i < n->leaf_node.num_entries; i++)
         {
-            printf("Leaf Node Entry: %d\n", i+1); //
+            printf("Leaf Node Entry: %d\n", i + 1); //
             printf("Object_ID = %d: ", n->leaf_node.entries[i].obj_id);
             printMBR(n->leaf_node.entries[i].mbr);
         }
@@ -558,7 +552,7 @@ void preOrderTraverse(NODE n)
     {
         for (int i = 0; i < n->non_leaf_node.num_entries; i++)
         {
-            printf("Internal node Entry: %d\n", i+1);
+            printf("Internal node Entry: %d\n", i + 1);
             printMBR(n->non_leaf_node.entries[i].mbr);
             preOrderTraverse(n->non_leaf_node.entries[i].child_ptr);
         }
@@ -755,11 +749,7 @@ void store_all_leaf_entries(LeafEntry *E, int *num_entries, NODE *S, int numSibl
 LeafEntry new_leafentry(Rectangle rectangle)
 {
     LeafEntry le;
-
-    // SET THE MBR
     le.mbr = rectangle;
-
-    // SET NEW OBJECT ID FROM GLOBAL CURRENT_ID
     le.obj_id = ++CURRENT_ID;
 
     return le;
@@ -772,10 +762,7 @@ NonLeafEntry new_nonleafentry(NODE newNode)
     NonLeafEntry nle;
 
     nle.child_ptr = newNode;
-
-    // IMP: SET THE MBR AND LHV OF THE NEW ENTRY AFTER DEFINING CHILD POINTER
     nle.mbr = calculateEntryMBR(nle);
-
     nle.largest_hilbert_value = calculateLHV(nle);
 
     return nle;
@@ -863,8 +850,6 @@ void distribute_nonleaf_entries_evenly(NODE *S, int numSiblings, NonLeafEntry *E
 NODE HandleOverFlowNode(NODE parentNode, NODE new_node1)
 {
 
-    // printf("HANDLE OVERFLOW NODE CALLED\n");
-
     // TO INSERT NEW_NODE AS A CHILD POINTER IN A NON LEAF ENTRY
     NonLeafEntry entry = new_nonleafentry(new_node1);
 
@@ -885,7 +870,7 @@ NODE HandleOverFlowNode(NODE parentNode, NODE new_node1)
     bool allFull = true;
     allFull = allNodesFull(S, numSiblings); // True if all nodes in S are full
     // printf("MAX ENTRIES = %d\n", max_entries);
-    NonLeafEntry *E = (NonLeafEntry *)calloc(max_entries+1, sizeof(NonLeafEntry));
+    NonLeafEntry *E = (NonLeafEntry *)calloc(max_entries + 1, sizeof(NonLeafEntry));
 
     // ADD ALL ENTRIES TO E FROM THE SIBLINGS
     store_all_nonleaf_entries(E, S, num_entries, numSiblings);
@@ -895,8 +880,6 @@ NODE HandleOverFlowNode(NODE parentNode, NODE new_node1)
 
     // SORT THE SET OF NON LEAF ENTRIES BASED ON LHV OF NON LEAF ENTRIES
     qsort(E, *num_entries, sizeof(NonLeafEntry), compareNonLeafEntry);
-
-
 
     // IF ALL SIBLINGS ARE FULL
     if (allFull)
@@ -910,7 +893,8 @@ NODE HandleOverFlowNode(NODE parentNode, NODE new_node1)
         {
             // PARENT NODE IS ROOT: ROOT WAS SPLIT
             root_split = true;
-            root1 = parentNode; root2 = NN;
+            root1 = parentNode;
+            root2 = NN;
         }
 
         // ADD NN TO SIBLINGS
@@ -970,8 +954,8 @@ int calculateLHV(NonLeafEntry entry)
         {
             node->non_leaf_node.entries[i].largest_hilbert_value = calculateLHV(node->non_leaf_node.entries[i]);
 
-            //ASSUMING LHV OF A NON LEAF ENTRY WITH A NON LEAF CHILD NODE IS THE MAXIMUM H OF THE NON LEAF ENTRIES IN THE CHILD NODE
-            if (node->non_leaf_node.entries[i].largest_hilbert_value> max_h)
+            // ASSUMING LHV OF A NON LEAF ENTRY WITH A NON LEAF CHILD NODE IS THE MAXIMUM H OF THE NON LEAF ENTRIES IN THE CHILD NODE
+            if (node->non_leaf_node.entries[i].largest_hilbert_value > max_h)
             {
                 max_h = node->non_leaf_node.entries[i].largest_hilbert_value;
             }
@@ -1086,7 +1070,6 @@ int numberOfSiblings(NODE *S)
         // IF NODE IS NOT NULL; COUNT IT
         if (S[i] != NULL)
         {
-
             numSiblings++;
         }
     }
@@ -1277,25 +1260,29 @@ int compare(const void *a, const void *b)
     return s1->mbr.h - s2->mbr.h;
 }
 
+//FUNCTION TO CREATE AND INSERT RECTANGLES
 void insertRectangles(HilbertRTree *Rtree)
 {
     // INSERT THE RECTANGLES INTO THE HILBERT RTREE
     for (int i = 0; i < MAX_POINTS; i++)
     {
-
+        rectangles[i] = new_rectangle(points[i].x, points[i].y, points[i].x, points[i].y);
         Rtree->root = Insert(Rtree->root, rectangles[i]);
     }
+
 }
 
-void createRectangles(){
-    //CREATE RECTANGLES FROM POINTS ARRAY
-    for(int i = 0; i<MAX_POINTS; i++){
+// NOT USED FOR LARGE DATASETS
+void createRectangles()
+{
+    // CREATE RECTANGLES FROM POINTS ARRAY
+    for (int i = 0; i < MAX_POINTS; i++)
+    {
         rectangles[i] = new_rectangle(points[i].x, points[i].y, points[i].x, points[i].y);
     }
 }
 
-
-// CALCULATE THE ORDER OF HILBERT CURVE REQUIRED
+// NOT USED: CALCULATE THE ORDER OF HILBERT CURVE REQUIRED
 int calculateOrder()
 {
     // SET MAXMIMUM COORDINATE VALUE TO 0
@@ -1325,14 +1312,19 @@ int calculateOrder()
     return order;
 }
 
+
+
 // FUNCTION TO READ FILE WITH NAME PASSED AS ARGUMENT
 // AND POPULATE THE POINTS GLOBAL ARRAY WITH MAX_POINTS NUMBER OF POINTS
-void readFile(char *filename, HilbertRTree *Rtree)
+void readFile(char *filename)
 {
     FILE *fp;
 
     // OPENING FILE CONTAINING THE INPUT DATA POINTS
     fp = fopen(filename, "r");
+
+    // SET MAXMIMUM COORDINATE VALUE TO 0
+    int max_val = 0;
 
     // IF FILE COULD NOT BE OPENED
     if (fp == NULL)
@@ -1344,37 +1336,63 @@ void readFile(char *filename, HilbertRTree *Rtree)
     // INPUT DATA POINTS FROM THE FILE: NUMBER OF POINTS SPECIFIED BY MACRO MAX_POINTS
     for (int i = 0; i < MAX_POINTS; i++)
     {
+        //INPUT POINT
         fscanf(fp, "%d %d\n", &points[i].x, &points[i].y);
-        rectangles[i] = new_rectangle(points[i].x, points[i].y, points[i].x, points[i].y);
-        Rtree->root = Insert(Rtree->root, rectangles[i]);
-        // printf("POINT  = %d %d\n", points[i].x, points[i].y);
+
+        // IF X OR Y COORDINATE EXCEDE CURRENT MAXIMUM; SET IT
+        if (points[i].x > max_val)
+        {
+            max_val = points[i].x;
+        }
+        if (points[i].y > max_val)
+        {
+            max_val = points[i].y;
+        }
     }
 
     // CLOSING THE FILE AFTER READING INPUT
     fclose(fp);
 
-    // QUICK SORT RECTANGLES ARRAY: CAN BE REMOVED
-    qsort(rectangles, MAX_POINTS, sizeof(struct Rectangle), compare); // ARGUMENTS = ARRAY, NUMBER OF ELEMENTS, SIZE OF EACH ELEMENT,
+    // ORDER BASED ON LEAST VALUE SUCH THAT 2^ORDER > MAX(X) AND 2^ORDER > MAX(Y)
+    hilbert_curve_order = (int)ceil(log2(max_val));
+
+    // PRINT THE MAXIMUM COORDINATE AND ORDER
+    printf("MAX VALUE = %d, ORDER= %d\n", max_val, hilbert_curve_order);
+
 }
+
+
+void insertRectanglesSorted(HilbertRTree* Rtree){
+    // CREATE THE RECTANGLES
+    for (int i = 0; i < MAX_POINTS; i++)
+    {
+        rectangles[i] = new_rectangle(points[i].x, points[i].y, points[i].x, points[i].y);
+    }
+
+    //SORT THE RECTANGLES BASED ON HILBERT VALUE
+    qsort(rectangles, MAX_POINTS, sizeof(struct Rectangle), compare); // ARGUMENTS = ARRAY, NUMBER OF ELEMENTS, SIZE OF EACH ELEMENT,
+
+    //INSERT THE RECTANGLES
+    for(int i = 0; i<MAX_POINTS; i++){
+        Rtree->root = Insert(Rtree->root, rectangles[i]);
+    }
+}
+
 
 
 int main()
 {
-
-
-
     // CREATE A HILBERT R TREE
     HilbertRTree *Rtree = new_hilbertRTree();
 
+    // READ THE POINTS INTO POINTS ARRAY FROM FILE & FIND HILBERT CURVE'S ORDER
+    readFile("data.txt"); // SPECIFY FILE NAME HERE
 
-    // READ THE POINTS INTO POINTS ARRAY FROM FILE
-    readFile("data.txt", Rtree); //SPECIFY FILE NAME HERE
+    // CREATE & INSERT THE POINT RECTANGLES INTO THE RTREE
+    insertRectangles(Rtree);
 
-    // CALCULATE ORDER OF HILBERT CURVE FROM POINTS
-    hilbert_curve_order = calculateOrder();
-
-    // INSERT THE POINT RECTANGLES INTO THE RTREE
-    // insertRectangles(Rtree);
+    //ALTERNATE: INSERT AFTER SORTING ON HILBERT VALUE
+    // insertRectanglesSorted(Rtree);
 
     // PERFORM A PRE ORDER TRAVERSAL OF THE TREE
     preOrderTraverse_Rtree(Rtree);
