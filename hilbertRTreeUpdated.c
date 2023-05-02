@@ -542,7 +542,7 @@ void preOrderTraverse(NODE n)
         {
             printf("Leaf Node Entry: %d\n", i + 1); //
             printf("Object_ID = %d: ", n->leaf_node.entries[i].obj_id);
-            printMBR(n->leaf_node.entries[i].mbr);
+            printf("Data Point = (%d, %d) ", n->leaf_node.entries[i].mbr.bottom_left.x, n->leaf_node.entries[i].mbr.bottom_left.y);
             printf("Hilbert Value = %llu\n\n", n->leaf_node.entries[i].mbr.h);
         }
     }
