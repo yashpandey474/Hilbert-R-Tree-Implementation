@@ -10,7 +10,7 @@
 #define m 2
 #define MAX_CHILDREN M // M = 4; MAXIMUM NUMBER OF CHILDREN/ENTRIES
 #define MIN_CHILDREN m // m = 2; MINIMUM NUMBER OF CHILDREN/ENTRIES
-#define MAX_POINTS 5000 // SPECIFY NUMBER OF POINTS TO TAKE AS INPUT
+#define MAX_POINTS 21 // SPECIFY NUMBER OF POINTS TO TAKE AS INPUT
 #define MAX_NO_SIBLINGS 4
 
 //--------------------------- STRUCTURE DEFINITIONS ----------------------------//
@@ -129,6 +129,7 @@ NODE findLeaf(NODE root, Rectangle rectangle);
 NODE HandleOverFlowNode(NODE parentNode, NODE new_node1);
 
 //--------------------------- FUNCTIONS TO CREATE NEW TREE AND NODE ----------------------------//
+
 // CREATE A NEW HILBERT R TREE STRUCTURE
 HilbertRTree *new_hilbertRTree()
 {
@@ -549,7 +550,7 @@ void preOrderTraverse(NODE n)
     {
         for (int i = 0; i < n->non_leaf_node.num_entries; i++)
         {
-            printf("Internal node Entry: %d\n", i + 1);
+            printf("Internal Node \n");
             printMBR(n->non_leaf_node.entries[i].mbr);
             preOrderTraverse(n->non_leaf_node.entries[i].child_ptr);
         }
@@ -558,6 +559,8 @@ void preOrderTraverse(NODE n)
 
 void preOrderTraverse_Rtree(HilbertRTree *tree)
 {
+
+    printf("\n\nRE-ORDER TRAVERSAL OF RTREE\n\n");
     // INVOKE FUNCTION USING NODE AS PARAMETER
     preOrderTraverse(tree->root);
 }
@@ -723,7 +726,7 @@ Rectangle calculateEntryMBR(NonLeafEntry entry)
 void printMBR(Rectangle rect)
 {
     // BOTTOM_LEFT POINT TO TOP_RIGHT POINT
-    printf("MBR = (%d, %d) to  (%d, %d)\n", rect.bottom_left.x, rect.bottom_left.y, rect.top_right.x, rect.top_right.y);
+    printf("MBR = (%d, %d) to  (%d, %d)\n\n", rect.bottom_left.x, rect.bottom_left.y, rect.top_right.x, rect.top_right.y);
     return;
 }
 
@@ -1388,7 +1391,7 @@ int main()
     HilbertRTree *Rtree = new_hilbertRTree();
 
     // READ THE POINTS INTO POINTS ARRAY FROM FILE & FIND HILBERT CURVE'S ORDER
-    readFile("data1.txt"); // SPECIFY FILE NAME HERE
+    readFile("data.txt"); // SPECIFY FILE NAME HERE
 
     // CREATE & INSERT THE POINT RECTANGLES INTO THE RTREE
     insertRectangles(Rtree);
