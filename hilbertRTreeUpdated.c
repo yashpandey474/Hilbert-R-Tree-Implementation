@@ -543,6 +543,7 @@ void preOrderTraverse(NODE n)
             printf("Leaf Node Entry: %d\n", i + 1); //
             printf("Object_ID = %d: ", n->leaf_node.entries[i].obj_id);
             printMBR(n->leaf_node.entries[i].mbr);
+            printf("Hilbert Value = %llu\n\n", n->leaf_node.entries[i].mbr.h);
         }
     }
     // IF NODE IS NON-LEAF
@@ -552,6 +553,7 @@ void preOrderTraverse(NODE n)
         {
             printf("Internal Node \n");
             printMBR(n->non_leaf_node.entries[i].mbr);
+            printf("Largest Hilbert Value = %llu\n\n", n->non_leaf_node.entries[i].largest_hilbert_value);
             preOrderTraverse(n->non_leaf_node.entries[i].child_ptr);
         }
     }
@@ -726,7 +728,7 @@ Rectangle calculateEntryMBR(NonLeafEntry entry)
 void printMBR(Rectangle rect)
 {
     // BOTTOM_LEFT POINT TO TOP_RIGHT POINT
-    printf("MBR = (%d, %d) to  (%d, %d)\n\n", rect.bottom_left.x, rect.bottom_left.y, rect.top_right.x, rect.top_right.y);
+    printf("MBR = (%d, %d) to  (%d, %d) ", rect.bottom_left.x, rect.bottom_left.y, rect.top_right.x, rect.top_right.y);
     return;
 }
 
