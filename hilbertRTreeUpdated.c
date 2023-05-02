@@ -10,7 +10,7 @@
 #define m 2
 #define MAX_CHILDREN M // M = 4; MAXIMUM NUMBER OF CHILDREN/ENTRIES
 #define MIN_CHILDREN m // m = 2; MINIMUM NUMBER OF CHILDREN/ENTRIES
-#define MAX_POINTS 50000 // SPECIFY NUMBER OF POINTS TO TAKE AS INPUT
+#define MAX_POINTS 5000 // SPECIFY NUMBER OF POINTS TO TAKE AS INPUT
 #define MAX_NO_SIBLINGS 4
 
 //--------------------------- STRUCTURE DEFINITIONS ----------------------------//
@@ -80,7 +80,7 @@ NODE root1 = NULL;
 NODE root2 = NULL;
 Point points[MAX_POINTS];
 Rectangle rectangles[MAX_POINTS];
-int hilbert_curve_order = 20; //DEFAULT; GETS CALCULATED AT RUN-TIME
+int hilbert_curve_order = 5; //DEFAULT; GETS CALCULATED AT RUN-TIME
 int max_entries = 0;
 
 // ---------------------------- FUNCTION DECLERATIONS ------------------------------ //
@@ -424,6 +424,7 @@ void AdjustTree(NODE N, NODE NN, NODE *S, int s_size)
         {
             InsertNode(Np, NN);
         }
+
         // OTHERWISE INNVOKE HANDLEOVERFLOWNODE
         else
         {
