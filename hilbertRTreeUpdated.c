@@ -104,7 +104,7 @@ void printMBR(Rectangle rect);
 void store_all_leaf_entries(LeafEntry *E, int *num_entries, NODE *S, int numSiblings);
 void distribute_nonleaf_entries_evenly(NODE *S, int numSiblings, NonLeafEntry *E, int *num_entries);
 void adjustLHV(NODE parentNode);
-void adjustMBR(NODE parentNode);
+void adjustMBRLHV(NODE parentNode);
 void distribute_leaf_entries_evenly(NODE *S, int numSiblings, LeafEntry *E, int *num_entries);
 void searchGetResults(NODE root, Rectangle rectangle, LeafEntry *results);
 void print_mbr(Rectangle r);
@@ -267,7 +267,6 @@ NODE Insert(NODE root, Rectangle rectangle)
     // I2. INSERT R IN A LEAF NODE L: IF L HAS AN EMPTY SLOT
     if (leafNode->leaf_node.num_entries < M)
     {
-
         // FIND INDEX WHERE RECTAGNGLE SHOULD BE INSERTED AS PER HILBERT VALUE
         int i = 0;
         while (i < leafNode->leaf_node.num_entries && leafNode->leaf_node.entries[i].mbr.h < rectangle.h)
@@ -425,14 +424,12 @@ void AdjustTree(NODE N, NODE NN, NODE *S, int s_size)
         // INSERT IN CORRECT ORDER IF ROOM IN PARENT NODE
         if (Np->non_leaf_node.num_entries < MAX_CHILDREN)
         {
-
             InsertNode(Np, NN);
         }
         // OTHERWISE INNVOKE HANDLEOVERFLOWNODE
         else
         {
-
-            // HANDLEOVERFLOWNODE: WHEN PARENT NODE MUST BE SPLIT
+            // HANDLEOVERFLOWNODE: WHEN PARENT NODE MUST BE SPLIT; NEW_NODE IS RETURNED
             new_node = HandleOverFlowNode(Np, NN);
 
             // IF ROOT NODE WAS SPLIT BY HANDLEOVERFLOW
@@ -449,6 +446,7 @@ void AdjustTree(NODE N, NODE NN, NODE *S, int s_size)
 
     // P = SET OF PARENT NODES FOR NODES IN S
     NODE *P = (NODE *)calloc(1, sizeof(NODE));
+
     // NUMBER OF NODES IN P
     int numParents = 1;
 
@@ -456,8 +454,8 @@ void AdjustTree(NODE N, NODE NN, NODE *S, int s_size)
     P[0] = S[0]->parent_ptr;
 
     // A3. ADJUST CORRESPONDINNG MBRs AND LHVs OF NODES IN P
-    adjustMBR(P[0]);
-    adjustLHV(P[0]);
+    adjustMBRLHV(P[0]);
+    // adjustLHV(P[0]);
 
     // A4. MOVE UP TO NEXT LEVEL: NN = NEW_NODE, S = P, NUMSIBLINGS = NUMPARENTS
     AdjustTree(Np, new_node, P, numParents);
@@ -497,7 +495,7 @@ NODE HandleOverFlow(NODE n, Rectangle rectangle)
     // SORT THE ENTRIES IN E
     qsort(E, *(num_entries), sizeof(LeafEntry), compare);
 
-    // H4. IF ATLEAST ONE OF SIBLINGS IS NOT FULL
+    // H4. IF ALL SIBLINGS ARE FULL: CREATE A NEW NODE
     if (allFull)
     {
 
@@ -570,13 +568,16 @@ void preOrderTraverse_Rtree(HilbertRTree *tree)
 // HELPER FUNCTION: Creates a new MBR with given coordinates
 Rectangle new_rectangle(int bottomLeft_X, int bottomLeft_y, int topRight_x, int topRight_y)
 {
+
     Rectangle mbr;
     // SET THE BOTTOM_LEFT COORDINATES
     mbr.bottom_left.x = bottomLeft_X;
     mbr.bottom_left.y = bottomLeft_y;
+
     // SET THE TOP_RIGHT COORDINATES
     mbr.top_right.x = topRight_x;
     mbr.top_right.y = topRight_y;
+
     // SET THE HILBERT VALUE USING CENTER'S COORDINATES
     mbr.h = calculate_hilbert_value(hilbert_curve_order, (mbr.bottom_left.x + mbr.top_right.x) / 2, (mbr.bottom_left.y + mbr.top_right.y) / 2);
     return mbr;
@@ -847,6 +848,7 @@ void distribute_nonleaf_entries_evenly(NODE *S, int numSiblings, NonLeafEntry *E
     return;
 }
 
+//FUNCTION TO HANDLE FULL PARENT NODES 
 NODE HandleOverFlowNode(NODE parentNode, NODE new_node1)
 {
 
@@ -869,6 +871,7 @@ NODE HandleOverFlowNode(NODE parentNode, NODE new_node1)
     // IF ALL SIBLINGS ARE FULL OR NOT
     bool allFull = true;
     allFull = allNodesFull(S, numSiblings); // True if all nodes in S are full
+
     // printf("MAX ENTRIES = %d\n", max_entries);
     NonLeafEntry *E = (NonLeafEntry *)calloc(max_entries + 1, sizeof(NonLeafEntry));
 
@@ -878,7 +881,7 @@ NODE HandleOverFlowNode(NODE parentNode, NODE new_node1)
     // ADD NEW NON LEAF ENTRY TO E
     E[(*num_entries)++] = entry;
 
-    // SORT THE SET OF NON LEAF ENTRIES BASED ON LHV OF NON LEAF ENTRIES
+    // SORT THE SET OF NON LEAF ENTRIES BASED ON LHV OF NON LEAF ENTRIES [FOR THE NEWEST ENTRY]
     qsort(E, *num_entries, sizeof(NonLeafEntry), compareNonLeafEntry);
 
     // IF ALL SIBLINGS ARE FULL
@@ -899,8 +902,6 @@ NODE HandleOverFlowNode(NODE parentNode, NODE new_node1)
 
         // ADD NN TO SIBLINGS
         S[numSiblings++] = NN; // ADD THE NEW NODE TO THE SET OF SIBLINGS
-
-        // printf("PARENT NODE: NUMBER OF NON LEAF ENTRIES = %d NUMBER OF SIBLINGS = %d\n", *num_entries, numSiblings);
     }
 
     distribute_nonleaf_entries_evenly(S, numSiblings, E, num_entries);
@@ -983,7 +984,9 @@ void adjustLHV(NODE parentNode)
     adjustLHV(parentNode->parent_ptr);
 }
 
-void adjustMBR(NODE parentNode)
+
+//ASCEND FROM PARENT NODE; ADJUSTING MBR AT ALL LEVELS UNTIL ROOT
+void adjustMBRLHV(NODE parentNode)
 {
     if (parentNode == NULL)
     {
@@ -995,8 +998,10 @@ void adjustMBR(NODE parentNode)
     {
         // CALCULATE THE MINIMUM BOUNDING RECTANGLE FOR EACH ENTRY
         parentNode->non_leaf_node.entries[i].mbr = calculateEntryMBR(parentNode->non_leaf_node.entries[i]);
+        parentNode->non_leaf_node.entries[i].largest_hilbert_value = calculateLHV(parentNode->non_leaf_node.entries[i]);
     }
-    adjustMBR(parentNode->parent_ptr);
+    //MOVE TO NEXT LEVEL
+    adjustMBRLHV(parentNode->parent_ptr);
 }
 
 // HELPER FUNCTION TO RETURN AN ARRAY OF COOPERATING SIBLING NODES AND THE NODE ITSELF
@@ -1268,6 +1273,7 @@ void insertRectangles(HilbertRTree *Rtree)
     {
         rectangles[i] = new_rectangle(points[i].x, points[i].y, points[i].x, points[i].y);
         Rtree->root = Insert(Rtree->root, rectangles[i]);
+        // printf("ENTRIES INSERTED: %d\n", i+1);
     }
 
 }
@@ -1375,10 +1381,43 @@ void insertRectanglesSorted(HilbertRTree* Rtree){
     //INSERT THE RECTANGLES
     for(int i = 0; i<MAX_POINTS; i++){
         Rtree->root = Insert(Rtree->root, rectangles[i]);
+
+        // printf("ENTRIES INSERTED: %d\n", i+1);
     }
 }
 
+void readFile2(char *filename, HilbertRTree* Rtree)
+{
+    FILE *fp;
 
+    // OPENING FILE CONTAINING THE INPUT DATA POINTS
+    fp = fopen(filename, "r");
+
+    // SET MAXMIMUM COORDINATE VALUE TO 0
+    int max_val = 0;
+
+    // IF FILE COULD NOT BE OPENED
+    if (fp == NULL)
+    {
+        printf("Error opening file.\n");
+        return;
+    }
+
+    // INPUT DATA POINTS FROM THE FILE: NUMBER OF POINTS SPECIFIED BY MACRO MAX_POINTS
+    for (int i = 0; i < MAX_POINTS; i++)
+    {
+        // INPUT POINT
+        fscanf(fp, "%d %d\n", &points[i].x, &points[i].y);
+        rectangles[i] = new_rectangle(points[i].x, points[i].y, points[i].x, points[i].y);
+        Rtree->root = Insert(Rtree->root, rectangles[i]);
+    }
+
+    // CLOSING THE FILE AFTER READING INPUT
+    fclose(fp);
+
+    // PRINT THE MAXIMUM COORDINATE AND ORDER
+    printf("MAX VALUE = %d, ORDER= %d\n", max_val, hilbert_curve_order);
+}
 
 int main()
 {
@@ -1386,10 +1425,14 @@ int main()
     HilbertRTree *Rtree = new_hilbertRTree();
 
     // READ THE POINTS INTO POINTS ARRAY FROM FILE & FIND HILBERT CURVE'S ORDER
-    readFile("data.txt"); // SPECIFY FILE NAME HERE
+    // readFile("data.txt"); // SPECIFY FILE NAME HERE
+
+
+    hilbert_curve_order = calculateOrder();
+    readFile2("data.txt", Rtree);
 
     // CREATE & INSERT THE POINT RECTANGLES INTO THE RTREE
-    insertRectangles(Rtree);
+    // insertRectangles(Rtree);
 
     //ALTERNATE: INSERT AFTER SORTING ON HILBERT VALUE
     // insertRectanglesSorted(Rtree);
