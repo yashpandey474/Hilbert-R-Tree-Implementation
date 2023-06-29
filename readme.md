@@ -6,7 +6,7 @@ You need to implement the Hilbert-R-tree data structure all its operations are e
 
 Then implement a pre order traveral of the tree you have build which prints the MBR values (top right point and bottom left point of the MBR being printed) for each internal node traversed, and prints the 2-D objects stored in them while traversing the leaf nodes. Clear distinction is to be made while printing, whether the node you are printing is internal node or external node.
 
-# EXPLANATION OF HOW TO COMPILE AND EXECUTE THE PROGRAM: DSA_ASSIGNMENT_GROUP_12.C
+# EXPLANATION OF HOW TO COMPILE AND EXECUTE THE PROGRAM: Hilbert_R_Tree_Finalc.c
 
 [Required libraries:  <stdio.h>, <stdint.h>, <stdlib.h>, <math.h>, <stdbool.h>]
 
@@ -21,7 +21,7 @@ Then implement a pre order traveral of the tree you have build which prints the 
 
 3. Then, the function insertRectangles taking the Rtree (An Rtree is created first using the new_hilbertRTree function) as parameter to create rectangles from these points and insert the rectangles into the specified Rtree [THE INSERTION HAPPENS BASED ON THE POINT OCCURING FIRST IN THE FILE]. Then preOrderTraverse_Rtree is called to print the internal nodes and MBRs and the leaf nodes with MBRs
 
-4. To run the code write gcc DSA_ASSIGNMENT_GROUP_12.c -lm and then write ./a.out
+4. To run the code write gcc Hilbert_R_Tree_Finalc.c -lm and then write ./a.out
 
 5. The macro specified at the top of the program: MAX_POINTS specifies the number of points present in the file; currently set at 21; kindly change this according to required number of points you want to input from the file
 
